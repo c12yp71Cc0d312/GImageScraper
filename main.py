@@ -30,6 +30,7 @@ def scrapeimages(searchquery, noOfImages, delay):
 
         time.sleep(1)        #waiting to fully load page
 
+        nDownloaded = 1
         for i in range(1, int(noOfImages) + 1):
             try:
                 thumbnail = WebDriverWait(driver, 10).until(
@@ -60,8 +61,12 @@ def scrapeimages(searchquery, noOfImages, delay):
                 keyboard.press(key)
                 keyboard.release(key)
                 driver.back()
-                urllib.request.urlretrieve(pyperclip.paste(), downloadDir + '\\' + searchQuery + str(i) + '.jpg')
-                print(pyperclip.paste())
+                try:
+                    urllib.request.urlretrieve(pyperclip.paste(), downloadDir + '\\' + searchQuery + str(i) + '.jpg')
+                    print('Downloaded ' + str(nDownloaded) + '/' + noOfImages)
+                    nDownloaded += 1
+                except:
+                    print('urlretrieve request blocked')
             except:
                 print('error - possibly, image took more than 10 seconds to load')
 
@@ -83,4 +88,7 @@ if __name__ == '__main__':
     except:
         print('using min delay')
         loadDelay = None
+    print('')
     scrapeimages(searchQuery, n, loadDelay)
+    print('')
+    print('Task Completed')
