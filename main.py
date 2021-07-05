@@ -62,7 +62,7 @@ def scrapeimages(searchquery, noOfImages, delay):
                 keyboard.release(key)
                 driver.back()
                 try:
-                    urllib.request.urlretrieve(pyperclip.paste(), downloadDir + '\\' + searchQuery + str(i) + '.jpg')
+                    urllib.request.urlretrieve(pyperclip.paste(), downloadDir + '\\' + searchQuery + str(nDownloaded) + '.jpg')
                     print('Downloaded ' + str(nDownloaded) + '/' + noOfImages)
                     nDownloaded += 1
                 except:
