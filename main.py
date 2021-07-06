@@ -110,14 +110,17 @@ if __name__ == '__main__':
     os.mkdir(downloadDir)
     n = input('Enter no of images: ')
     loadDelay = input('Enter image load delay (in secs): ')
+
     try:
         loadDelay = float(loadDelay)
         if(loadDelay < 0):
             print('using min delay')
             loadDelay = None
+
     except:
         print('using min delay')
         loadDelay = None
+
     print('')
     scrapeimages(searchQuery, n, loadDelay)
     print('')
