@@ -29,14 +29,10 @@ def scrapeimages(searchquery, noOfImages, delay):
             EC.presence_of_element_located((By.CLASS_NAME, "mJxzWe"))
         )
         time.sleep(1)        #waiting to fully load page
-
-
-        nDownloaded = 1
+        nDownloaded = 0
         nErrors = 0
-
-        i = 1
-        total = int(noOfImages)
-        while i <= total:
+        i = 1       #index to iterate through images on page
+        while nDownloaded < int(noOfImages):
             try:
                 thumbnail = WebDriverWait(driver, 3).until(
                     EC.presence_of_element_located(
@@ -51,7 +47,6 @@ def scrapeimages(searchquery, noOfImages, delay):
                     )
                     thumbnail.click()
                     i += 1
-                    total += 1
                     print('rs skipped')
                 except:                     #i+1th image not found, so scrolling down
                     bodyEle = driver.find_element_by_tag_name('body')
@@ -65,12 +60,9 @@ def scrapeimages(searchquery, noOfImages, delay):
                         thumbnail.click()
                         print('scrolled down and found')
                     except:                 #ith image not found after scrolling down, so first element after scrolling down is related searches container, hence skipping it
-                        total += 1
                         i += 1
                         continue
                         print('continue')
-            i += 1
-
             try:
                 imgContainer = WebDriverWait(driver, 5).until(
                     EC.presence_of_element_located(
@@ -86,13 +78,15 @@ def scrapeimages(searchquery, noOfImages, delay):
                 driver.back()
                 try:
                     urllib.request.urlretrieve(pyperclip.paste(), downloadDir + '\\' + searchQuery + str(nDownloaded) + '.jpg')
-                    print('Downloaded ' + str(nDownloaded) + '/' + noOfImages + '  (' + str(nErrors) + ' failed)')
                     nDownloaded += 1
+                    print('Downloaded ' + str(nDownloaded) + '/' + noOfImages + '  (' + str(nErrors) + ' failed)')
                 except:
                     print('urlretrieve request blocked - ' + pyperclip.paste())
                     nErrors += 1
             except:
                 print('error - possibly, image container took more than 5 seconds to load')
+            i += 1
+
     except:
         print('ERROR - took more than 10 seconds to load')
 
@@ -115,3 +109,5 @@ if __name__ == '__main__':
     scrapeimages(searchQuery, n, loadDelay)
     print('')
     print('Task Completed')
+
+    '//*[@id="islrg"]/div[1]/div[104]/a[1]/div[1]/img'
