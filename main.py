@@ -28,10 +28,13 @@ def scrapeimages(searchquery, noOfImages, delay):
         WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.CLASS_NAME, "mJxzWe"))
         )
+
         time.sleep(1)        #waiting to fully load page
+
         nDownloaded = 0
         nErrors = 0
         i = 1       #index to iterate through images on page
+
         while nDownloaded < int(noOfImages):
             try:
                 thumbnail = WebDriverWait(driver, 3).until(
@@ -39,6 +42,7 @@ def scrapeimages(searchquery, noOfImages, delay):
                         (By.XPATH, '//*[@id="islrg"]/div[1]/div[' + str(i) + ']/a[1]/div[1]/img'))
                 )
                 thumbnail.click()
+
             except:
                 try:                        #trying to skip related searches container(if any), hence searching for i+1th image
                     thumbnail = WebDriverWait(driver, 3).until(
@@ -47,44 +51,53 @@ def scrapeimages(searchquery, noOfImages, delay):
                     )
                     thumbnail.click()
                     i += 1
-                    print('rs skipped')
+
                 except:                     #i+1th image not found, so scrolling down
                     bodyEle = driver.find_element_by_tag_name('body')
                     bodyEle.send_keys(Keys.PAGE_DOWN)
                     time.sleep(1)
+
                     try:                    #searching for ith image (after scrolling down)
                         thumbnail = WebDriverWait(driver, 3).until(
                             EC.presence_of_element_located(
                                 (By.XPATH, '//*[@id="islrg"]/div[1]/div[' + str(i) + ']/a[1]/div[1]/img'))
                         )
                         thumbnail.click()
-                        print('scrolled down and found')
+
                     except:                 #ith image not found after scrolling down, so first element after scrolling down is related searches container, hence skipping it
                         i += 1
                         continue
-                        print('continue')
+
             try:
                 imgContainer = WebDriverWait(driver, 5).until(
                     EC.presence_of_element_located(
                         (By.XPATH, '//*[@id="Sva75c"]/div/div/div[3]/div[2]/c-wiz/div/div[1]/div[1]'))
                 )
+
                 if loadDelay is not None:
                     time.sleep(float(delay))  # time to fully load image
+
                 rClick = ActionChains(driver)
                 rClick.context_click(imgContainer)
                 rClick.perform()
+
                 keyboard.press(key)
                 keyboard.release(key)
+
                 driver.back()
+
                 try:
                     urllib.request.urlretrieve(pyperclip.paste(), downloadDir + '\\' + searchQuery + str(nDownloaded) + '.jpg')
                     nDownloaded += 1
                     print('Downloaded ' + str(nDownloaded) + '/' + noOfImages + '  (' + str(nErrors) + ' failed)')
+
                 except:
                     print('urlretrieve request blocked - ' + pyperclip.paste())
                     nErrors += 1
+
             except:
                 print('error - possibly, image container took more than 5 seconds to load')
+
             i += 1
 
     except:
@@ -109,5 +122,3 @@ if __name__ == '__main__':
     scrapeimages(searchQuery, n, loadDelay)
     print('')
     print('Task Completed')
-
-    '//*[@id="islrg"]/div[1]/div[104]/a[1]/div[1]/img'
