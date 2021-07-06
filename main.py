@@ -18,6 +18,7 @@ key = 'o'
 def scrapeimages(searchquery, noOfImages, delay):
     driver = webdriver.Chrome(PATH)
     driver.get("https:images.google.com")
+    driver.maximize_window()
     search = driver.find_element_by_name('q')
     search.clear()
     search.send_keys(searchquery)
@@ -27,29 +28,51 @@ def scrapeimages(searchquery, noOfImages, delay):
         WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.CLASS_NAME, "mJxzWe"))
         )
-
         time.sleep(1)        #waiting to fully load page
 
+
         nDownloaded = 1
-        for i in range(1, int(noOfImages) + 1):
+        nErrors = 0
+
+        i = 1
+        total = int(noOfImages)
+        while i <= total:
             try:
-                thumbnail = WebDriverWait(driver, 10).until(
+                thumbnail = WebDriverWait(driver, 3).until(
                     EC.presence_of_element_located(
                         (By.XPATH, '//*[@id="islrg"]/div[1]/div[' + str(i) + ']/a[1]/div[1]/img'))
                 )
                 thumbnail.click()
             except:
-                bodyEle = driver.find_element_by_tag_name('body')
-                bodyEle.send_keys(Keys.PAGE_UP)
-                time.sleep(1)
-                thumbnail = WebDriverWait(driver, 10).until(
-                    EC.presence_of_element_located(
-                        (By.XPATH, '//*[@id="islrg"]/div[1]/div[' + str(i) + ']/a[1]/div[1]/img'))
-                )
-                thumbnail.click()
+                try:                        #trying to skip related searches container(if any), hence searching for i+1th image
+                    thumbnail = WebDriverWait(driver, 3).until(
+                        EC.presence_of_element_located(
+                            (By.XPATH, '//*[@id="islrg"]/div[1]/div[' + str(i+1) + ']/a[1]/div[1]/img'))
+                    )
+                    thumbnail.click()
+                    i += 1
+                    total += 1
+                    print('rs skipped')
+                except:                     #i+1th image not found, so scrolling down
+                    bodyEle = driver.find_element_by_tag_name('body')
+                    bodyEle.send_keys(Keys.PAGE_DOWN)
+                    time.sleep(1)
+                    try:                    #searching for ith image (after scrolling down)
+                        thumbnail = WebDriverWait(driver, 3).until(
+                            EC.presence_of_element_located(
+                                (By.XPATH, '//*[@id="islrg"]/div[1]/div[' + str(i) + ']/a[1]/div[1]/img'))
+                        )
+                        thumbnail.click()
+                        print('scrolled down and found')
+                    except:                 #ith image not found after scrolling down, so first element after scrolling down is related searches container, hence skipping it
+                        total += 1
+                        i += 1
+                        continue
+                        print('continue')
+            i += 1
 
             try:
-                imgContainer = WebDriverWait(driver, 10).until(
+                imgContainer = WebDriverWait(driver, 5).until(
                     EC.presence_of_element_located(
                         (By.XPATH, '//*[@id="Sva75c"]/div/div/div[3]/div[2]/c-wiz/div/div[1]/div[1]'))
                 )
@@ -63,13 +86,13 @@ def scrapeimages(searchquery, noOfImages, delay):
                 driver.back()
                 try:
                     urllib.request.urlretrieve(pyperclip.paste(), downloadDir + '\\' + searchQuery + str(nDownloaded) + '.jpg')
-                    print('Downloaded ' + str(nDownloaded) + '/' + noOfImages)
+                    print('Downloaded ' + str(nDownloaded) + '/' + noOfImages + '  (' + str(nErrors) + ' failed)')
                     nDownloaded += 1
                 except:
-                    print('urlretrieve request blocked')
+                    print('urlretrieve request blocked - ' + pyperclip.paste())
+                    nErrors += 1
             except:
-                print('error - possibly, image took more than 10 seconds to load')
-
+                print('error - possibly, image container took more than 5 seconds to load')
     except:
         print('ERROR - took more than 10 seconds to load')
 
