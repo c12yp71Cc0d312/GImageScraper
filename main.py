@@ -14,11 +14,11 @@ PATH = "C:\Program Files (x86)\chromedriver.exe"
 
 keyboard = Controller()
 key = 'o'
+key2 = Key.right
 
-def scrapeimages(searchquery, noOfImages, delay):
+def scrapeimages(searchquery, noOfImages, delay, alreadyDownloaded):
     driver = webdriver.Chrome(PATH)
     driver.get("https:images.google.com")
-    driver.maximize_window()
     search = driver.find_element_by_name('q')
     search.clear()
     search.send_keys(searchquery)
@@ -31,42 +31,35 @@ def scrapeimages(searchquery, noOfImages, delay):
 
         time.sleep(1)        #waiting to fully load page
 
-        nDownloaded = 0
         nErrors = 0
         i = 1       #index to iterate through images on page
+        nDownloaded = alreadyDownloaded
 
-        while nDownloaded < int(noOfImages):
-            try:
-                thumbnail = WebDriverWait(driver, 3).until(
-                    EC.presence_of_element_located(
-                        (By.XPATH, '//*[@id="islrg"]/div[1]/div[' + str(i) + ']/a[1]/div[1]/img'))
-                )
-                thumbnail.click()
+        openImage = False
 
-            except:
-                try:                        #trying to skip related searches container(if any), hence searching for i+1th image
+        while nDownloaded < (int(noOfImages) + alreadyDownloaded):
+
+            if not openImage:
+                try:
                     thumbnail = WebDriverWait(driver, 3).until(
                         EC.presence_of_element_located(
-                            (By.XPATH, '//*[@id="islrg"]/div[1]/div[' + str(i+1) + ']/a[1]/div[1]/img'))
+                            (By.XPATH, '//*[@id="islrg"]/div[1]/div[1]/a[1]/div[1]/img'))
                     )
                     thumbnail.click()
-                    i += 1
 
-                except:                     #i+1th image not found, so scrolling down
-                    bodyEle = driver.find_element_by_tag_name('body')
-                    bodyEle.send_keys(Keys.PAGE_DOWN)
-                    time.sleep(1)
+                except:
+                    thumbnail = WebDriverWait(driver, 3).until(
+                        EC.presence_of_element_located(
+                            (By.XPATH, '//*[@id="islrg"]/div[1]/div[2]/a[1]/div[1]/img'))
+                    )
+                    thumbnail.click()
+                openImage = True
 
-                    try:                    #searching for ith image (after scrolling down)
-                        thumbnail = WebDriverWait(driver, 3).until(
-                            EC.presence_of_element_located(
-                                (By.XPATH, '//*[@id="islrg"]/div[1]/div[' + str(i) + ']/a[1]/div[1]/img'))
-                        )
-                        thumbnail.click()
+            else:
+                keyboard.press(key2)
+                keyboard.release(key2)
 
-                    except:                 #ith image not found after scrolling down, so first element after scrolling down is related searches container, hence skipping it
-                        i += 1
-                        continue
+            pyperclip.copy('')
 
             try:
                 imgContainer = WebDriverWait(driver, 5).until(
@@ -84,12 +77,13 @@ def scrapeimages(searchquery, noOfImages, delay):
                 keyboard.press(key)
                 keyboard.release(key)
 
-                driver.back()
+                while not pyperclip.paste():
+                    time.sleep(0.1)
 
                 try:
-                    urllib.request.urlretrieve(pyperclip.paste(), downloadDir + '\\' + searchQuery + str(nDownloaded) + '.jpg')
+                    urllib.request.urlretrieve(pyperclip.paste(), downloadDir + '\\' + searchQuery + str(nDownloaded+1) + '.jpg')
                     nDownloaded += 1
-                    print('Downloaded ' + str(nDownloaded) + '/' + noOfImages + '  (' + str(nErrors) + ' failed)')
+                    print('Downloaded ' + str(nDownloaded - alreadyDownloaded) + '/' + noOfImages + '  (' + str(nErrors) + ' failed)')
 
                 except:
                     print('urlretrieve request blocked - ' + pyperclip.paste())
@@ -107,7 +101,14 @@ def scrapeimages(searchquery, noOfImages, delay):
 if __name__ == '__main__':
     searchQuery = input('Enter search term: ')
     downloadDir = os.path.dirname(os.path.abspath(__file__)) + '\\' + searchQuery
-    os.mkdir(downloadDir)
+
+    if not os.path.isdir(downloadDir):
+        os.mkdir(downloadDir)
+        alreadyDownloaded = 0
+
+    else:
+        alreadyDownloaded = len(os.listdir(downloadDir))
+
     n = input('Enter no of images: ')
     loadDelay = input('Enter image load delay (in secs): ')
 
@@ -122,6 +123,6 @@ if __name__ == '__main__':
         loadDelay = None
 
     print('')
-    scrapeimages(searchQuery, n, loadDelay)
+    scrapeimages(searchQuery, n, loadDelay, alreadyDownloaded)
     print('')
     print('Task Completed')
